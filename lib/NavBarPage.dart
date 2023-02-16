@@ -11,10 +11,12 @@ class NavbarPage extends StatefulWidget {
   State<StatefulWidget> createState() => NavbarPageState();
 }
 
+typedef pcl=Widget Function(int ctg);
+
 class NavbarPageState extends State<NavbarPage> implements RouteAware {
   final List<Widget> destinations = [];
   final List<Widget> pages = [];
-  final List<Widget> navigatorWidgets = [];
+  final List<pcl> navigatorWidgets = [];
   final List<SecondaryVariableNavigation> navigators = [];
   int selectedTab = 0;
 
@@ -53,38 +55,47 @@ class NavbarPageState extends State<NavbarPage> implements RouteAware {
     navigators.add(SecondaryVariableNavigation());
     navigators.add(SecondaryVariableNavigation());
     navigators.add(SecondaryVariableNavigation());
-    navigatorWidgets.add(Navigator(
-      key: navigators[0].navigatioKey,
-      initialRoute: "pagezero",
-      onGenerateRoute: _onGenerateRoute,
-    ));
+    navigatorWidgets.add((int cTab)=>Offstage(
+        offstage: cTab != 0,
+        child: Navigator(
+          key: navigators[0].navigatioKey,
+          initialRoute: "pagezero",
+          onGenerateRoute: _onGenerateRoute,
+        )));
 
-    navigatorWidgets.add(Navigator(
-      key: navigators[1].navigatioKey,
-      initialRoute: "pageone",
-      onGenerateRoute: _onGenerateRoute,
-    ));
+    navigatorWidgets.add((int cTab)=>Offstage(
+        offstage: cTab != 1,
+        child: Navigator(
+          key: navigators[1].navigatioKey,
+          initialRoute: "pageone",
+          onGenerateRoute: _onGenerateRoute,
+        )));
 
-        navigatorWidgets.add(Navigator(
-      key: navigators[2].navigatioKey,
-      initialRoute: "pagetwo",
-      onGenerateRoute: _onGenerateRoute,
-    ));
-
+    navigatorWidgets.add((int cTab)=>Offstage(
+        offstage: cTab != 2,
+        child: Navigator(
+          key: navigators[2].navigatioKey,
+          initialRoute: "pagetwo",
+          onGenerateRoute: _onGenerateRoute,
+        )));
   }
 
   Route _onGenerateRoute(RouteSettings settings) {
     late Widget page;
 
-    switch(settings.name){
-      case "pagezero":{
-        page = pages[0];
-      }; break;
-      case "pageone":{
-        page = pages[1];
-      }
-      break;
-      case "pagetwo": page=pages[2];
+    switch (settings.name) {
+      case "pagezero":
+        {
+          page = pages[0];
+        }
+        break;
+      case "pageone":
+        {
+          page = pages[1];
+        }
+        break;
+      case "pagetwo":
+        page = pages[2];
     }
 
     return MaterialPageRoute<dynamic>(
@@ -96,11 +107,12 @@ class NavbarPageState extends State<NavbarPage> implements RouteAware {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-      body: navigatorWidgets[selectedTab],
-      bottomNavigationBar:
-          NavigationBar(destinations: destinations, selectedIndex: 0, onDestinationSelected: onDestinationSelected));
-
+  Widget build(BuildContext context) => WillPopScope(
+      onWillPop: () async => !await navigators[selectedTab].navigatioKey.currentState!.maybePop(),
+      child: Scaffold(
+          body: Stack(children:[navigatorWidgets.map((e) => e(selectedTab)).first]),
+          bottomNavigationBar: NavigationBar(
+              destinations: destinations, selectedIndex: selectedTab, onDestinationSelected: onDestinationSelected)));
   @override
   void didPop() {
     // TODO: implement didPop
@@ -122,18 +134,17 @@ class NavbarPageState extends State<NavbarPage> implements RouteAware {
   }
 
   void pushButton({String? routeName, int? routeIdx}) {
-    var navigator = navigators[selectedTab];
-    if(routeName!=null){
-        Navigator.pushNamed(context, routeName);
-    } 
+    if (routeName != null) {
+      navigators[selectedTab].navigatioKey.currentState!.pushNamed(routeName);
+    }
   }
 
   Widget _buildIdx2() => Center(
       child: SizedBox(
           height: 300,
           child: Column(children: [
-            TextButton(onPressed: ()=> pushButton(routeName:"pagezero"), child: Text("Page zero")),
-            TextButton(onPressed: ()=> pushButton(routeName:"pageone"), child: Text("Page Other")),
+            TextButton(onPressed: () => pushButton(routeName: "pagezero"), child: Text("Page zero")),
+            TextButton(onPressed: () => pushButton(routeName: "pageone"), child: Text("Page Other")),
             Text('Page 2')
           ])));
 
@@ -175,7 +186,7 @@ class NavbarPageState extends State<NavbarPage> implements RouteAware {
                       ),
                     ),
                     ListTile(
-                        onTap: ()=> pushButton(routeName:"pagetwo"),
+                        onTap: () => pushButton(routeName: "pagetwo"),
                         title: const Text("Page two",
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
@@ -188,7 +199,7 @@ class NavbarPageState extends State<NavbarPage> implements RouteAware {
                           color: Colors.green[500],
                         )),
                     ListTile(
-                       onTap: ()=> pushButton(routeName:"pagezero"),
+                        onTap: () => pushButton(routeName: "pagezero"),
                         title: const Text("Page zero",
                             style: TextStyle(
                               fontWeight: FontWeight.w500,
@@ -210,7 +221,7 @@ class NavbarPageState extends State<NavbarPage> implements RouteAware {
     return ListView(
       children: [
         ListTile(
-            onTap: ()=> pushButton(routeName:"pagetwo"),
+            onTap: () => pushButton(routeName: "pagetwo"),
             title: const Text("Page two",
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
@@ -223,8 +234,7 @@ class NavbarPageState extends State<NavbarPage> implements RouteAware {
               color: Colors.green[500],
             )),
         ListTile(
-              onTap: ()=> pushButton(routeName:"pageone"),
-
+            onTap: () => pushButton(routeName: "pageone"),
             title: const Text("Page One",
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
